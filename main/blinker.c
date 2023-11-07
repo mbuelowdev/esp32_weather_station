@@ -8,6 +8,7 @@ void init_blinker(void);
 void set_blinker_disabled(void);
 void set_blinker_bt_discoverable(void);
 void set_blinker_bt_connected(void);
+void vTaskBlinker(void * pvParameters);
 
 typedef enum {
     BLINKER_DISABLED = 0,
@@ -17,7 +18,25 @@ typedef enum {
 
 static BLINKER_MODE blinker_mode = BLINKER_DISABLED;
 
-// Task to be created.
+/**
+ * Initializes the blinker pin an starts the async blinker
+ * controlling FreeRTOS-Task.
+*/
+void init_blinker(void)
+{
+    // Initialize BLINK_GPIO for our LED
+    gpio_reset_pin(BLINK_GPIO);
+    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_level(BLINK_GPIO, 0);
+
+    // Start async Task to manage LED blinking
+    TaskHandle_t taskHandle = NULL;
+    xTaskCreate(vTaskBlinker, "BLINKER", 1024, NULL, 1, &taskHandle); 
+}
+
+/**
+ * Blinker controlling FreeRTOS-Task to run separately from main task.
+*/
 void vTaskBlinker(void * pvParameters)
 {
     bool led_is_on = false;
@@ -43,33 +62,31 @@ void vTaskBlinker(void * pvParameters)
     }
 }
 
-void init_blinker(void)
-{
-    // Initialize BLINK_GPIO for our LED
-    gpio_reset_pin(BLINK_GPIO);
-    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
-    gpio_set_level(BLINK_GPIO, 0);
-
-    //static uint8_t ucParameterToPass;
-    TaskHandle_t taskHandle = NULL;
-
-    // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
-    // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
-    // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
-    // the new task attempts to access it.
-    xTaskCreate(vTaskBlinker, "BLINKER", 1024, NULL, 1, &taskHandle); 
-}
-
+/**
+ * Put blinker in BLINKER_BT_DISCOVERABLE state.
+ * 
+ * LED will be turned off.
+*/
 void set_blinker_disabled(void)
 {
     blinker_mode = BLINKER_DISABLED;
 }
 
+/**
+ * Put blinker in BLINKER_BT_DISCOVERABLE state.
+ * 
+ * LED will blink in 500ms interval.
+*/
 void set_blinker_bt_discoverable(void)
 {
     blinker_mode = BLINKER_BT_DISCOVERABLE;
 }
 
+/**
+ * Put blinker in BLINKER_BT_CONNECTED state.
+ * 
+ * LED will be turned on permanently.
+*/
 void set_blinker_bt_connected(void)
 {
     blinker_mode = BLINKER_BT_CONNECTED;
