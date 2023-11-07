@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "task.h": "c",
+        "freertos.h": "c",
+        "freertosconfig.h": "c",
+        "*.tcc": "c"
+    },
+    "idf.adapterTargetName": "esp32",
+    "C_Cpp.intelliSenseEngine": "Tag Parser"
+}

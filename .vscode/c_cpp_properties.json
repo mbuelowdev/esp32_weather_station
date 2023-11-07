@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/home/michael/esp/esp-idf/components/**"
+            ],
+            "browse": {
+                "path": [
+                  "/home/michael/esp/esp-idf/components",
+                  "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+              },
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-arm64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}
