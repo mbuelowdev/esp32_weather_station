@@ -4,7 +4,19 @@
         "task.h": "c",
         "freertos.h": "c",
         "freertosconfig.h": "c",
-        "*.tcc": "c"
+        "*.tcc": "c",
+        "type_traits": "c",
+        "optional": "c",
+        "ratio": "c",
+        "system_error": "c",
+        "array": "c",
+        "functional": "c",
+        "tuple": "c",
+        "utility": "c",
+        "string_view": "c",
+        "regex": "c",
+        "random": "c",
+        "compare": "cpp"
     },
     "idf.adapterTargetName": "esp32",
     "C_Cpp.intelliSenseEngine": "Tag Parser"

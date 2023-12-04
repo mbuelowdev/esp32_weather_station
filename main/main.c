@@ -1,12 +1,16 @@
 #include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+
 #include "wifi.c"
 #include "sensors.c"
-#include "configuration.c"
-#include "blinker.c"
+#include "blinker.h"
+#include "configuration.h"
+#include "configuration_mode.c"
 
 void app_main(void);
+bool is_configuration_button_pressed(void);
 void configuration_mode_loop(void);
 void normal_mode_loop(void);
 void sleep_for_next_interval(void);
@@ -17,10 +21,9 @@ void app_main(void)
     // TODO
 
     // 2. Fetch device configuration from nvs
-    esp_err_t err = load_configuration();
+    esp_err_t err = cfg_load();
     if (err != ESP_OK) {
         printf("Error (%s) reading data from NVS!\n", esp_err_to_name(err));
-        fflush(stdout);
         fflush(stdout);
         sleep_for_next_interval();
 
@@ -30,22 +33,16 @@ void app_main(void)
     printf("Current config:\ndata_sink=%s\ndata_sink_push_format=%i\nmeasurement_rate=%i\nupload_rate=%i\nwifi_ssid=%s\nwifi_password=%s\n", configuration.data_sink, configuration.data_sink_push_format, configuration.measurement_rate, configuration.upload_rate, configuration.wifi_ssid, configuration.wifi_password);
     fflush(stdout);
 
-    init_blinker();
+    blinker_init();
 
-    for (int i = 60; i >= 0; i--) {
+    if (!is_configuration_button_pressed()) {
+        printf("Starting configuration mode...\n");
+        fflush(stdout);
+        cfgmode_start();
+    }
+
+    for (int i = 600; i >= 0; i--) {
         printf("Restarting in %d seconds...\n", i);
-        if (i == 45) {
-            set_blinker_bt_discoverable();
-        }
-
-        if (i == 30) {
-            set_blinker_bt_discoverable();
-        }
-
-        if (i == 15) {
-            set_blinker_bt_connected();
-        }
-
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     printf("Restarting now.\n");
@@ -54,6 +51,23 @@ void app_main(void)
 
     // 3. Switch into normal mode
     // TODO
+}
+
+bool is_configuration_button_pressed(void)
+{
+    //int CONFIGURATION_BUTTON_GPIO = 4;
+
+    gpio_config_t cfg = {
+        .pin_bit_mask = BIT64(4),
+        .mode = GPIO_MODE_DEF_INPUT,
+        .pull_up_en = false,
+        .pull_down_en = true,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+
+    gpio_config(&cfg);
+    
+    return gpio_get_level(4) == 1;
 }
 
 void configuration_mode_loop(void)

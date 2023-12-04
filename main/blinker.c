@@ -2,13 +2,7 @@
 #include <freertos/task.h>
 #include <driver/gpio.h>
 
-#define BLINK_GPIO 5
-
-void init_blinker(void);
-void set_blinker_disabled(void);
-void set_blinker_bt_discoverable(void);
-void set_blinker_bt_connected(void);
-void vTaskBlinker(void * pvParameters);
+#include "blinker.h"
 
 typedef enum {
     BLINKER_DISABLED = 0,
@@ -22,11 +16,19 @@ static BLINKER_MODE blinker_mode = BLINKER_DISABLED;
  * Initializes the blinker pin an starts the async blinker
  * controlling FreeRTOS-Task.
 */
-void init_blinker(void)
+void blinker_init(void)
 {
     // Initialize BLINK_GPIO for our LED
-    gpio_reset_pin(BLINK_GPIO);
-    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
+    gpio_config_t cfg = {
+        .pin_bit_mask = BIT64(BLINK_GPIO),
+        .mode = GPIO_MODE_DEF_OUTPUT,
+        //for powersave reasons, the GPIO should not be floating, select pullup
+        .pull_up_en = true,
+        .pull_down_en = false,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&cfg);
+
     gpio_set_level(BLINK_GPIO, 0);
 
     // Start async Task to manage LED blinking
@@ -67,7 +69,7 @@ void vTaskBlinker(void * pvParameters)
  * 
  * LED will be turned off.
 */
-void set_blinker_disabled(void)
+void blinker_set_disabled(void)
 {
     blinker_mode = BLINKER_DISABLED;
 }
@@ -77,7 +79,7 @@ void set_blinker_disabled(void)
  * 
  * LED will blink in 500ms interval.
 */
-void set_blinker_bt_discoverable(void)
+void blinker_set_bt_discoverable(void)
 {
     blinker_mode = BLINKER_BT_DISCOVERABLE;
 }
@@ -87,7 +89,7 @@ void set_blinker_bt_discoverable(void)
  * 
  * LED will be turned on permanently.
 */
-void set_blinker_bt_connected(void)
+void blinker_set_bt_connected(void)
 {
     blinker_mode = BLINKER_BT_CONNECTED;
 }
