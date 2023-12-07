@@ -3,7 +3,7 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 
-#include "wifi.c"
+#include "wifi.h"
 #include "sensors.c"
 #include "blinker.h"
 #include "configuration.h"
@@ -35,16 +35,37 @@ void app_main(void)
 
     blinker_init();
 
-    if (!is_configuration_button_pressed()) {
+    if (is_configuration_button_pressed()) {
         printf("Starting configuration mode...\n");
         fflush(stdout);
         cfgmode_start();
+
+        for (int i = 120; i >= 0; i--) {
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+        }
+
+        esp_restart();
     }
 
-    for (int i = 600; i >= 0; i--) {
-        printf("Restarting in %d seconds...\n", i);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+    for (int i = 400; i >= 0; i--) {
+        printf("Connecting to AP\n");
+        fflush(stdout);
+
+        // TODO connect to wifi
+        connect_to_wifi();
+
+        // TODO http post to endpoint with dummy load
+
+        vTaskDelay(15000 / portTICK_PERIOD_MS);
     }
+
+
+    //for (int i = 600; i >= 0; i--) {
+    //    printf("Restarting in %d seconds...\n", i);
+    //    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    //}
+
     printf("Restarting now.\n");
     fflush(stdout);
     esp_restart();

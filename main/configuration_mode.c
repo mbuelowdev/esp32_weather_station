@@ -541,7 +541,7 @@ static void bt_gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_
                 esp_log_buffer_hex(BT_LOG_TAG, param->write.value, param->write.len);
 
             if (param->write.handle == handle_table[IDX_CHAR_DATA_SINK_VALUE]) {
-                memcpy(configuration.data_sink, param->write.value, param->write.len);
+                strncpy(configuration.data_sink, (char*) param->write.value, param->write.len);
             } else if (param->write.handle == handle_table[IDX_CHAR_DATA_SINK_PUSH_FORMAT_VALUE]) {
                 configuration.data_sink_push_format = param->write.value[0];
             } else if (param->write.handle == handle_table[IDX_CHAR_MEASURMENT_RATE_VALUE]) {
@@ -549,9 +549,9 @@ static void bt_gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_
             } else if (param->write.handle == handle_table[IDX_CHAR_UPLOAD_RATE_VALUE]) {
                 configuration.upload_rate = (param->write.value[0] << 8) + param->write.value[1];
             } else if (param->write.handle == handle_table[IDX_CHAR_WIFI_SSID_VALUE]) {
-                memcpy(configuration.wifi_ssid, param->write.value, param->write.len);
+                strncpy(configuration.wifi_ssid, (char*) param->write.value, param->write.len);
             } else if (param->write.handle == handle_table[IDX_CHAR_WIFI_PASSWORD_VALUE]) {
-                memcpy(configuration.wifi_password, param->write.value, param->write.len);
+                strncpy(configuration.wifi_password, (char*) param->write.value, param->write.len);
             } else if (param->write.handle == handle_table[IDX_CHAR_FLUSH_VALUE]) {
                 cfg_write();
             }
