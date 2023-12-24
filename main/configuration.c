@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <string.h>
-#include <esp_attr.h>
-#include <nvs_flash.h>
-#include <nvs.h>
+#include "esp_attr.h"
+#include "nvs_flash.h"
+#include "nvs.h"
 
 #include "configuration.h"
 

@@ -14,7 +14,7 @@ struct configuration_t {
      * 
      * Default: "http://configuration/" 
     */
-    char data_sink[256];
+    char data_sink[300];
 
     /**
      * The format in which the data should be pushed to the data sink. Supports

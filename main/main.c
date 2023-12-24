@@ -1,80 +1,104 @@
 #include <stdio.h>
+#include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "driver/rtc_io.h"
+#include "esp_sleep.h"
+#include "esp_attr.h"
+#include "esp_netif.h"
+#include "esp_netif_sntp.h"
 
 #include "wifi.h"
-#include "sensors.c"
+#include "sensors.h"
 #include "blinker.h"
 #include "configuration.h"
 #include "configuration_mode.c"
+#include "pusher.h"
 
 void app_main(void);
-bool is_configuration_button_pressed(void);
-void configuration_mode_loop(void);
-void normal_mode_loop(void);
-void sleep_for_next_interval(void);
+esp_err_t main_fetch_device_configuration(void);
+bool main_is_configuration_button_pressed(void);
+void main_configuration_mode_loop(void);
+void main_normal_mode_loop(void);
+
+RTC_DATA_ATTR static uint32_t boot_count = 0;
+RTC_DATA_ATTR static uint8_t measurement_count = 0;
+RTC_DATA_ATTR static uint32_t last_upload_timestamp = 0;
+RTC_DATA_ATTR static struct sensor_data_t measurements[100];
 
 void app_main(void)
 {
-    // 1. Check if we have to boot into configuration mode
-    // TODO
+    boot_count += 1;
+    bool isColdBoot = boot_count == 1;
 
-    // 2. Fetch device configuration from nvs
+    // 1. Fetch device configuration once into RTC memory on cold boot
+    if (isColdBoot) {
+        main_fetch_device_configuration();
+        printf(
+            "Current config:\n"
+            "data_sink=%s\n"
+            "data_sink_push_format=%i\n"
+            "measurement_rate=%i\n"
+            "upload_rate=%i\n"
+            "wifi_ssid=%s\n"
+            "wifi_password=%s\n"
+            "sleeping for %i us\n",
+            configuration.data_sink,
+            configuration.data_sink_push_format,
+            configuration.measurement_rate,
+            configuration.upload_rate,
+            configuration.wifi_ssid,
+            configuration.wifi_password,
+            configuration.measurement_rate * 1000 * 1000
+        );
+        fflush(stdout);
+    }
+
+    // Intialize the blinker
+    blinker_init();
+
+    // 2. Jump into configuration mode if requested on cold boot
+    if (isColdBoot && main_is_configuration_button_pressed()) {
+        main_configuration_mode_loop();
+    }
+
+    // Update the system time once on cold boot
+    if (isColdBoot) {
+        ESP_ERROR_CHECK(connect_to_wifi());
+        esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+        ESP_ERROR_CHECK(esp_netif_sntp_init(&config));
+        ESP_ERROR_CHECK(esp_netif_sntp_sync_wait(pdMS_TO_TICKS(15000)));
+
+        // Wait for the deregister to be processed by the AP
+        disconnect_from_wifi();
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+    }
+
+    // Prepare some stuff for power saving reasons
+    // TODO maybe needs to move before the sleep-call
+    if (isColdBoot) {
+        rtc_gpio_isolate(GPIO_NUM_4);
+    }
+
+    // Enter the normal measuring cycle
+    main_normal_mode_loop();
+}
+
+esp_err_t main_fetch_device_configuration()
+{
     esp_err_t err = cfg_load();
     if (err != ESP_OK) {
         printf("Error (%s) reading data from NVS!\n", esp_err_to_name(err));
         fflush(stdout);
-        sleep_for_next_interval();
 
-        return;
+        return err;
     }
 
-    printf("Current config:\ndata_sink=%s\ndata_sink_push_format=%i\nmeasurement_rate=%i\nupload_rate=%i\nwifi_ssid=%s\nwifi_password=%s\n", configuration.data_sink, configuration.data_sink_push_format, configuration.measurement_rate, configuration.upload_rate, configuration.wifi_ssid, configuration.wifi_password);
-    fflush(stdout);
-
-    blinker_init();
-
-    if (is_configuration_button_pressed()) {
-        printf("Starting configuration mode...\n");
-        fflush(stdout);
-        cfgmode_start();
-
-        for (int i = 120; i >= 0; i--) {
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-        }
-
-        esp_restart();
-    }
-
-
-    for (int i = 400; i >= 0; i--) {
-        printf("Connecting to AP\n");
-        fflush(stdout);
-
-        // TODO connect to wifi
-        connect_to_wifi();
-
-        // TODO http post to endpoint with dummy load
-
-        vTaskDelay(15000 / portTICK_PERIOD_MS);
-    }
-
-
-    //for (int i = 600; i >= 0; i--) {
-    //    printf("Restarting in %d seconds...\n", i);
-    //    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    //}
-
-    printf("Restarting now.\n");
-    fflush(stdout);
-    esp_restart();
-
-    // 3. Switch into normal mode
-    // TODO
+    return ESP_OK;
 }
 
-bool is_configuration_button_pressed(void)
+bool main_is_configuration_button_pressed(void)
 {
     //int CONFIGURATION_BUTTON_GPIO = 4;
 
@@ -91,26 +115,60 @@ bool is_configuration_button_pressed(void)
     return gpio_get_level(4) == 1;
 }
 
-void configuration_mode_loop(void)
+void main_configuration_mode_loop(void)
 {
-    // 1. Enable bluetooth pairing and wait for client to connect
-    // TODO
+    // We start a bluetooth service to read/modify the configuration
+    cfgmode_start();
 
-    // 2. Send current configuration to client
-    // TODO
+    // After the bluetooth service got started, we stay in that mode for 5 minutes
+    vTaskDelay(300000 / portTICK_PERIOD_MS);
 
-    // 3. Wait and receive new configuration from client
-    // TODO
-
-    // 4. Persist new configuration
-    // TODO
-
-    // 5. Reboot
-    // TODO
+    // We restart after the 5 minutes
+    esp_restart();
 }
 
-void normal_mode_loop(void)
+void main_normal_mode_loop(void)
 {
+    struct sensor_data_t* current_sensor_data = malloc(sizeof(struct sensor_data_t));
+    memset(current_sensor_data, 0, sizeof(struct sensor_data_t));
+
+    struct timeval tv_now;
+    gettimeofday(&tv_now, NULL);
+    current_sensor_data->timestamp = tv_now.tv_sec;
+    current_sensor_data->temperature = 10 + measurement_count;
+    current_sensor_data->humidity = 45;
+
+    memcpy(&measurements[measurement_count], current_sensor_data, sizeof(struct sensor_data_t));
+    free(current_sensor_data);
+    measurement_count += 1;
+
+    // Upon cold boot set the last_upload_timestamp to now
+    if (last_upload_timestamp == 0) {
+        last_upload_timestamp = tv_now.tv_sec;    
+    }
+
+    printf("measurement          : %i\n",   measurement_count);
+    printf("tv_now.tv_sec        : %lli\n", tv_now.tv_sec);
+    printf("last_upload_timestamp: %li\n",  last_upload_timestamp);
+    fflush(stdout);
+
+    // Check if enough time has past to trigger an upload
+    if ((last_upload_timestamp + configuration.upload_rate) < tv_now.tv_sec) {
+        ESP_ERROR_CHECK(connect_to_wifi());
+        ESP_ERROR_CHECK(pusher_http_push(measurements, measurement_count));
+        last_upload_timestamp = tv_now.tv_sec;
+
+        // Since we uploaded the data we can discard it from rtc memory now
+        measurement_count = 0;
+        memset(&measurements, 0, sizeof(struct sensor_data_t) * 100);
+    }
+
+    disconnect_from_wifi();
+    blinker_set_disabled();
+
+    esp_sleep_enable_timer_wakeup(configuration.measurement_rate * 1000 * 1000);
+    esp_deep_sleep_start();
+
     // 1. Initialize values in static rtc ram depending on configuration
     // TODO
 
@@ -128,9 +186,4 @@ void normal_mode_loop(void)
 
     // 6. Go into deep sleep for one interval
     // TODO
-}
-
-void sleep_for_next_interval()
-{
-
 }

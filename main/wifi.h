@@ -16,9 +16,10 @@
 
 #include "configuration.h"
 
-static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
-void wifi_init_sta(void);
-void connect_to_wifi(void);
+//static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+esp_err_t wifi_init_sta(void);
+esp_err_t connect_to_wifi(void);
+esp_err_t disconnect_from_wifi(void);
 
 /* The examples use WiFi configuration that you can set via project configuration menu
 
@@ -27,7 +28,7 @@ void connect_to_wifi(void);
 */
 //#define EXAMPLE_ESP_WIFI_SSID      CONFIG_ESP_WIFI_SSID
 //#define EXAMPLE_ESP_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
-#define WIFI_CONNECT_MAXIMUM_RETRY  3
+#define WIFI_CONNECT_MAXIMUM_RETRY  5
 
 #if CONFIG_ESP_WPA3_SAE_PWE_HUNT_AND_PECK
 #define ESP_WIFI_SAE_MODE WPA3_SAE_PWE_HUNT_AND_PECK
