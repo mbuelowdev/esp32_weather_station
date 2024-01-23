@@ -27,20 +27,21 @@
 
 #include "sensors.h"
 #include "configuration.h"
+#include "formatter.h"
 
 #define SERVER_URL_MAX_SZ 256
 
 static const char *LOG_TAG = "PUSHER";
 
-esp_err_t pusher_http_push(struct sensor_data_t* measurements, uint8_t measurements_length)
+esp_err_t pusher_http_push(struct sensor_data_t* measurements, size_t measurements_length)
 {
     char* url = &configuration.data_sink[0];
-    char* http_request = (char*) malloc(1024);
+    char* http_request = (char*) malloc(10240);
     char* http_host = (char*) malloc(128);
     char* http_path = (char*) malloc(512);
     esp_tls_t *tls = NULL;
 
-    memset(http_request, 0, 768);
+    memset(http_request, 0, 10240);
     memset(http_host, 0, 128);
     memset(http_path, 0, 512);
 
@@ -88,16 +89,25 @@ esp_err_t pusher_http_push(struct sensor_data_t* measurements, uint8_t measureme
         url_parse_result->field_data[UF_FRAGMENT].len
     );
 
+    // Format the measurements as configured
+    char* measurements_formatted_buffer = malloc(5120);
+    formatter_format_measurements_as_json(measurements_formatted_buffer, 5120, measurements, measurements_length);
+
     sprintf(
         http_request,
         "POST %s HTTP/1.1\r\n"
         "Host: %s\r\n"
         "User-Agent: esp-idf/1.0 esp32\r\n"
         "Connection: close\r\n"
-        "Content-Length: 7\r\n"
+        "Content-Length: %d\r\n"
         "\r\n"
         "%s",
-        http_path, http_host, "test123");
+        http_path, http_host,
+        strlen(measurements_formatted_buffer),
+        measurements_formatted_buffer
+    );
+
+    free(measurements_formatted_buffer);
 
     tls = esp_tls_init();
     if (!tls) {

@@ -129,17 +129,20 @@ void main_configuration_mode_loop(void)
 
 void main_normal_mode_loop(void)
 {
-    struct sensor_data_t* current_sensor_data = malloc(sizeof(struct sensor_data_t));
-    memset(current_sensor_data, 0, sizeof(struct sensor_data_t));
+    struct sensor_data_t* current_measurement = malloc(sizeof(struct sensor_data_t));
+    memset(current_measurement, 0, sizeof(struct sensor_data_t));
 
     struct timeval tv_now;
     gettimeofday(&tv_now, NULL);
-    current_sensor_data->timestamp = tv_now.tv_sec;
-    current_sensor_data->temperature = 10 + measurement_count;
-    current_sensor_data->humidity = 45;
+    current_measurement->timestamp = tv_now.tv_sec;
 
-    memcpy(&measurements[measurement_count], current_sensor_data, sizeof(struct sensor_data_t));
-    free(current_sensor_data);
+    sensors_init();
+    sensors_read_temperature_and_humidity_outside(current_measurement);
+    sensors_read_daylight(current_measurement);
+    sensors_deinit();
+
+    memcpy(&measurements[measurement_count], current_measurement, sizeof(struct sensor_data_t));
+    free(current_measurement);
     measurement_count += 1;
 
     // Upon cold boot set the last_upload_timestamp to now

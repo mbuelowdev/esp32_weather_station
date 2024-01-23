@@ -5,6 +5,6 @@
 #include "sensors.h"
 #include "pusher.c"
 
-esp_err_t pusher_http_push(struct sensor_data_t* measurements, uint8_t measurements_length);
+esp_err_t pusher_http_push(struct sensor_data_t* measurements, size_t measurements_length);
 
 #endif

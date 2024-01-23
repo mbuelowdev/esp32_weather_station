@@ -35,7 +35,7 @@ Pressure will be measured by an BME280 ([Product](https://www.adafruit.com/produ
 Daylight will be measured by an VEML7700 ([Product](https://www.adafruit.com/product/4162)|[Datasheet](https://www.vishay.com/docs/84286/veml7700.pdf)).
 
 - The sensor resides inside the weather station
-- The sensor supports I2C (addresses: 0x20, 0x21)
+- The sensor supports I2C (addresses: 0x10)
 - Has to be located next to a small window
 
 ### UV
