@@ -10,6 +10,9 @@
 i2c_master_bus_handle_t i2c_bus_handle;
 i2c_master_dev_handle_t sht30_dev_handle = NULL;
 i2c_master_dev_handle_t veml7700_dev_handle = NULL;
+i2c_master_dev_handle_t veml6070_0x38_dev_handle = NULL;
+i2c_master_dev_handle_t veml6070_0x39_dev_handle = NULL;
+i2c_master_dev_handle_t veml6070_0x0C_dev_handle = NULL;
 
 esp_err_t sensors_init(void)
 {
@@ -42,6 +45,30 @@ esp_err_t sensors_init(void)
     };
     i2c_master_bus_add_device(i2c_bus_handle, &veml7700_dev_cfg, &veml7700_dev_handle);
 
+    // Register VEML6070 (UVA intensity) (Address used for writing to cmd and reading lsb data)
+    i2c_device_config_t veml6070_0x38_dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = 0x38,
+        .scl_speed_hz = 100000,
+    };
+    i2c_master_bus_add_device(i2c_bus_handle, &veml6070_0x38_dev_cfg, &veml6070_0x38_dev_handle);
+
+    // Register VEML6070 (UVA intensity) (Address used for reading msb data)
+    i2c_device_config_t veml6070_0x39_dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = 0x39,
+        .scl_speed_hz = 100000,
+    };
+    i2c_master_bus_add_device(i2c_bus_handle, &veml6070_0x39_dev_cfg, &veml6070_0x39_dev_handle);
+
+    // Register VEML6070 (UVA intensity) (Address used for clearing ara register)
+    i2c_device_config_t veml6070_0x0C_dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = 0x0C,
+        .scl_speed_hz = 100000,
+    };
+    i2c_master_bus_add_device(i2c_bus_handle, &veml6070_0x0C_dev_cfg, &veml6070_0x0C_dev_handle);
+
     return ESP_OK;
 }
 
@@ -55,7 +82,7 @@ esp_err_t sensors_deinit(void)
 
 esp_err_t sensors_read_temperature_and_humidity_outside(struct sensor_data_t * measurement)
 {
-    // 1. Power the sensor
+    // Power the sensor
     // powerup();
     vTaskDelay(1 / portTICK_PERIOD_MS);
 
@@ -101,7 +128,7 @@ esp_err_t sensors_read_daylight(struct sensor_data_t * measurement)
 {
     esp_err_t err = ESP_OK;
 
-    // 1. Power the sensor
+    // Power the sensor
     // powerup();
     vTaskDelay(1 / portTICK_PERIOD_MS);
 
@@ -167,6 +194,80 @@ esp_err_t sensors_read_daylight(struct sensor_data_t * measurement)
     err = i2c_master_transmit(veml7700_dev_handle, write_buf4, sizeof(write_buf4), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
     if (err != ESP_OK) {
         ESP_LOGE("I2C-VEML7700", "error-sd-1: %i", err);
+        return err;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t sensors_read_uv(struct sensor_data_t * measurement)
+{
+    esp_err_t err = ESP_OK;
+
+    // Power the sensor
+    vTaskDelay(150 / portTICK_PERIOD_MS);
+
+    // Clear ara register
+    uint8_t read_buf1[1] = {0};
+    err = i2c_master_receive(veml6070_0x0C_dev_handle, read_buf1, sizeof(read_buf1), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    if (err != ESP_OK) {
+        ESP_LOGE("I2C-VEML6070", "error-r-1: %i", err);
+        return err;
+    }
+
+    uint8_t VEML_CONFIG = 0;
+    VEML_CONFIG = VEML_CONFIG | (0b00 << 7);  // Reserved
+    VEML_CONFIG = VEML_CONFIG | (0b0 << 5);   // ACK
+    VEML_CONFIG = VEML_CONFIG | (0b0 << 4);   // ACK_THD
+    VEML_CONFIG = VEML_CONFIG | (0b10 << 3);  // IT
+    VEML_CONFIG = VEML_CONFIG | (0b1 << 1);   // Reserved
+    VEML_CONFIG = VEML_CONFIG | (0b0 << 0);   // SD
+    
+    // Write the device configuration
+    uint8_t write_buf1[1] = {VEML_CONFIG};
+    err = i2c_master_transmit(veml6070_0x38_dev_handle, write_buf1, sizeof(write_buf1), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    if (err != ESP_OK) {
+        ESP_LOGE("I2C-VEML6070", "error-r-2: %i", err);
+        return err;
+    }
+
+    // Wait at least one IT (integration time)
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+    // Read the measurement (lsb)
+    uint8_t read_buf2[1] = {0};
+    err = i2c_master_receive(veml6070_0x38_dev_handle, read_buf2, sizeof(read_buf2), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    if (err != ESP_OK) {
+        ESP_LOGE("I2C-VEML6070", "error-r-3: %i", err);
+        return err;
+    }
+
+    // Read the measurement (msb)
+    uint8_t read_buf3[1] = {0};
+    err = i2c_master_receive(veml6070_0x39_dev_handle, read_buf3, sizeof(read_buf3), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    if (err != ESP_OK) {
+        ESP_LOGE("I2C-VEML6070", "error-r-4: %i", err);
+        return err;
+    }
+
+    // Save the measurement
+    ESP_LOG_BUFFER_HEX("I2C-VEML6070", read_buf2, sizeof(read_buf2));
+    ESP_LOG_BUFFER_HEX("I2C-VEML6070", read_buf3, sizeof(read_buf3));
+    uint16_t raw_uv = read_buf2[0] + (read_buf3[0] << 8);
+    ESP_LOGI("I2C-VEML6070", "UV: %d", raw_uv);
+    measurement->uv = raw_uv;
+
+    // Shutdown the sensor to save power
+    uint8_t VEML_CONFIG_SHUTDOWN = VEML_CONFIG | (0b1 << 0);
+    uint8_t write_buf2[1] = {VEML_CONFIG_SHUTDOWN};
+    err = i2c_master_transmit(veml6070_0x38_dev_handle, write_buf2, sizeof(write_buf2), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    if (err != ESP_OK) {
+        ESP_LOGE("I2C-VEML6070", "error-r-5: %i", err);
         return err;
     }
 

@@ -26,14 +26,16 @@ esp_err_t formatter_format_measurements_as_json(char* buffer, size_t buffer_leng
             &buffer[offset],
             "{"
             "\"time\":%li,"
-            "\"temp\":%.2f," // 42 letters
+            "\"temp\":%.2f," // 48-58 letters
             "\"humd\":%.0f,"
-            "\"dayl\":%.0f"
+            "\"dayl\":%.0f,"
+            "\"uv\":%d"
             "},", // With comma
             measurements[i].timestamp,
             measurements[i].temperature,
             measurements[i].humidity,
-            measurements[i].daylight
+            measurements[i].daylight,
+            measurements[i].uv
         );   
     }
 
@@ -43,14 +45,16 @@ esp_err_t formatter_format_measurements_as_json(char* buffer, size_t buffer_leng
         &buffer[offset],
         "{"
         "\"time\":%li,"
-        "\"temp\":%.2f," // 41 letters
+        "\"temp\":%.2f," // 47-57 letters
         "\"humd\":%.0f,"
-        "\"dayl\":%.0f"
+        "\"dayl\":%.0f,"
+        "\"uv\":%d"
         "}", // Without comma
         measurements[measurements_length - 1].timestamp,
         measurements[measurements_length - 1].temperature,
         measurements[measurements_length - 1].humidity,
-        measurements[measurements_length - 1].daylight
+        measurements[measurements_length - 1].daylight,
+        measurements[measurements_length - 1].uv
     );
 
     // Write the last part of the JSON

@@ -37,11 +37,17 @@ struct sensor_data_t {
      * Daylight in Lux
     */
     double daylight;
+
+    /**
+     * UVA intensity in μW/cm²
+    */
+    uint16_t uv;
 };
 
 esp_err_t sensors_init(void);
 esp_err_t sensors_deinit(void);
 esp_err_t sensors_read_temperature_and_humidity_outside(struct sensor_data_t* measurement);
 esp_err_t sensors_read_daylight(struct sensor_data_t * measurement);
+esp_err_t sensors_read_uv(struct sensor_data_t * measurement);
 
 #endif
