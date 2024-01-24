@@ -43,6 +43,7 @@ void app_main(void)
             "upload_rate=%i\n"
             "wifi_ssid=%s\n"
             "wifi_password=%s\n"
+            "subtract_measuring_time=%s\n"
             "sleeping for %i us\n",
             configuration.data_sink,
             configuration.data_sink_push_format,
@@ -50,6 +51,7 @@ void app_main(void)
             configuration.upload_rate,
             configuration.wifi_ssid,
             configuration.wifi_password,
+            configuration.subtract_measuring_time ? "true" : "false",
             configuration.measurement_rate * 1000 * 1000
         );
         fflush(stdout);

@@ -51,6 +51,15 @@ struct configuration_t {
      * Default: "configuration"
     */
     char wifi_password[64];
+
+    /**
+     * If set: Substracts the measuring time from the
+     * measurement rate to keep the measurement time
+     * from offsetting over time.
+     * 
+     * Default: false
+    */
+    bool subtract_measuring_time;
 };
 
 /**

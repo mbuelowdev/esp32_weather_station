@@ -15,7 +15,8 @@ struct configuration_t default_configuration = {
     60,
     600,
     "configure",
-    "configure"
+    "configure",
+    false
 };
 
 RTC_DATA_ATTR struct configuration_t configuration;

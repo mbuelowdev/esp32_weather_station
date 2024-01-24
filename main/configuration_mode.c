@@ -59,6 +59,9 @@ enum
     IDX_CHAR_WIFI_PASSWORD,
     IDX_CHAR_WIFI_PASSWORD_VALUE,
 
+    IDX_CHAR_WIFI_SUBTRACT_MEASURING_TIME,
+    IDX_CHAR_WIFI_SUBTRACT_MEASURING_TIME_VALUE,
+
     IDX_CHAR_FLUSH,
     IDX_CHAR_FLUSH_VALUE,
 
@@ -149,14 +152,15 @@ struct gatts_profile_inst {
 };
 
 /* Service */
-static const uint16_t GATTS_SERVICE_UUID_TEST               = 0x00FF;
-static const uint16_t GATTS_CHAR_UUID_DATA_SINK             = 0xFF01;
-static const uint16_t GATTS_CHAR_UUID_DATA_SINK_PUSH_FORMAT = 0xFF02;
-static const uint16_t GATTS_CHAR_UUID_MEASUREMENT_RATE      = 0xFF03;
-static const uint16_t GATTS_CHAR_UUID_UPLOAD_RATE           = 0xFF04;
-static const uint16_t GATTS_CHAR_UUID_WIFI_SSID             = 0xFF05;
-static const uint16_t GATTS_CHAR_UUID_WIFI_PASSWORD         = 0xFF06;
-static const uint16_t GATTS_CHAR_UUID_FLUSH                 = 0xFFFF;
+static const uint16_t GATTS_SERVICE_UUID_TEST                   = 0x00FF;
+static const uint16_t GATTS_CHAR_UUID_DATA_SINK                 = 0xFF01;
+static const uint16_t GATTS_CHAR_UUID_DATA_SINK_PUSH_FORMAT     = 0xFF02;
+static const uint16_t GATTS_CHAR_UUID_MEASUREMENT_RATE          = 0xFF03;
+static const uint16_t GATTS_CHAR_UUID_UPLOAD_RATE               = 0xFF04;
+static const uint16_t GATTS_CHAR_UUID_WIFI_SSID                 = 0xFF05;
+static const uint16_t GATTS_CHAR_UUID_WIFI_PASSWORD             = 0xFF06;
+static const uint16_t GATTS_CHAR_UUID_SUBTRACT_MEASURING_TIME   = 0xFF07;
+static const uint16_t GATTS_CHAR_UUID_FLUSH                     = 0xFFFF;
 
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
@@ -232,6 +236,16 @@ static const esp_gatts_attr_db_t gatt_db[TABLE_MAX] =
     /* Characteristic Value */
     [IDX_CHAR_WIFI_PASSWORD_VALUE] =
     {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_WIFI_PASSWORD, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+      CHAR_VALUE_LENGTH_MAX, 0, NULL}},
+
+    /* Subtract Measuring Time */
+    /* Characteristic Declaration */
+    [IDX_CHAR_WIFI_SUBTRACT_MEASURING_TIME]     =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
+    /* Characteristic Value */
+    [IDX_CHAR_WIFI_SUBTRACT_MEASURING_TIME_VALUE] =
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_SUBTRACT_MEASURING_TIME, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       CHAR_VALUE_LENGTH_MAX, 0, NULL}},
 
     /* Flush Characteristic (used to save configuration on write) */
@@ -520,6 +534,10 @@ static void bt_gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_
             } else if (param->read.handle == handle_table[IDX_CHAR_WIFI_PASSWORD_VALUE]) {
                 gatt_rsp->attr_value.len = strlen(configuration.wifi_password);
                 memcpy(gatt_rsp->attr_value.value, configuration.wifi_password, gatt_rsp->attr_value.len);
+            } else if (param->read.handle == handle_table[IDX_CHAR_WIFI_SUBTRACT_MEASURING_TIME_VALUE]) {
+                gatt_rsp->attr_value.len = 1;
+                uint8_t bytes[1] = {configuration.subtract_measuring_time ? 1 : 0};
+                memcpy(gatt_rsp->attr_value.value, &bytes, gatt_rsp->attr_value.len);
             }  else if (param->read.handle == handle_table[IDX_CHAR_FLUSH_VALUE]) {
                 gatt_rsp->attr_value.len = 0;
             }
@@ -552,6 +570,8 @@ static void bt_gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_
                 strncpy(configuration.wifi_ssid, (char*) param->write.value, param->write.len);
             } else if (param->write.handle == handle_table[IDX_CHAR_WIFI_PASSWORD_VALUE]) {
                 strncpy(configuration.wifi_password, (char*) param->write.value, param->write.len);
+            } else if (param->write.handle == handle_table[IDX_CHAR_WIFI_SUBTRACT_MEASURING_TIME_VALUE]) {
+                configuration.subtract_measuring_time = param->write.value[0] > 0;
             } else if (param->write.handle == handle_table[IDX_CHAR_FLUSH_VALUE]) {
                 cfg_write();
             }
