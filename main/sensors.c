@@ -13,6 +13,7 @@ i2c_master_dev_handle_t veml7700_dev_handle = NULL;
 i2c_master_dev_handle_t veml6070_0x38_dev_handle = NULL;
 i2c_master_dev_handle_t veml6070_0x39_dev_handle = NULL;
 i2c_master_dev_handle_t veml6070_0x0C_dev_handle = NULL;
+i2c_master_dev_handle_t max17048_dev_handle = NULL;
 
 esp_err_t sensors_init(void)
 {
@@ -68,6 +69,14 @@ esp_err_t sensors_init(void)
         .scl_speed_hz = 100000,
     };
     i2c_master_bus_add_device(i2c_bus_handle, &veml6070_0x0C_dev_cfg, &veml6070_0x0C_dev_handle);
+
+    // Register MAX17048 (battery)
+    i2c_device_config_t max17048_dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = 0x36,
+        .scl_speed_hz = 100000,
+    };
+    i2c_master_bus_add_device(i2c_bus_handle, &max17048_dev_cfg, &max17048_dev_handle);
 
     return ESP_OK;
 }
@@ -270,6 +279,53 @@ esp_err_t sensors_read_uv(struct sensor_data_t * measurement)
         ESP_LOGE("I2C-VEML6070", "error-r-5: %i", err);
         return err;
     }
+
+    return ESP_OK;
+}
+
+// TODO error handling
+// TODO smoothen the code
+// TODO comments
+esp_err_t sensors_read_battery_status(struct sensor_data_t * measurement)
+{
+    esp_err_t err;
+
+    uint8_t MAX17048_VCELL_REG = 0x02;
+    uint8_t MAX17048_SOC_REG = 0x04;
+    uint8_t MAX17048_CRATE_REG = 0x16;
+
+    // Power the sensor
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+
+    // Read voltage
+    uint8_t write_buf1[1] = {MAX17048_VCELL_REG};
+    uint8_t read_buf1[2] = {0};
+    err = i2c_master_transmit_receive(max17048_dev_handle, write_buf1, sizeof(write_buf1), read_buf1, sizeof(read_buf1), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    uint16_t voltage_raw = read_buf1[1] + (read_buf1[0] << 8);
+    double voltage = voltage_raw * 78.125 / 1000000.0;
+    ESP_LOG_BUFFER_HEX("I2C-MAX17048", read_buf1, sizeof(read_buf1));
+    ESP_LOGI("I2C-MAX17048", "Voltage: %0.3fV", voltage);
+    measurement->battery_voltage = voltage;
+
+    // Read percent
+    uint8_t write_buf2[1] = {MAX17048_SOC_REG};
+    uint8_t read_buf2[2] = {0};
+    err = i2c_master_transmit_receive(max17048_dev_handle, write_buf2, sizeof(write_buf2), read_buf2, sizeof(read_buf2), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    uint16_t soc_raw = read_buf2[1] + (read_buf2[0] << 8);
+    double charge = soc_raw / 256.0;
+    ESP_LOG_BUFFER_HEX("I2C-MAX17048", read_buf2, sizeof(read_buf2));
+    ESP_LOGI("I2C-MAX17048", "Charge: %0.1f%%", charge);
+    measurement->battery_charge = charge;
+
+    // Read charge rate
+    uint8_t write_buf3[1] = {MAX17048_CRATE_REG};
+    uint8_t read_buf3[2] = {0};
+    err = i2c_master_transmit_receive(max17048_dev_handle, write_buf3, sizeof(write_buf3), read_buf3, sizeof(read_buf3), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    uint16_t crate_raw = read_buf3[1] + (read_buf3[0] << 8);
+    double charge_rate = ((int16_t) crate_raw) * 0.208;
+    ESP_LOG_BUFFER_HEX("I2C-MAX17048", read_buf3, sizeof(read_buf3));
+    ESP_LOGI("I2C-MAX17048", "Charge rate: %0.1f%%/h", charge_rate);
+    measurement->battery_charge_rate = charge_rate;
 
     return ESP_OK;
 }

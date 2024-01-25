@@ -142,6 +142,7 @@ void main_normal_mode_loop(void)
     sensors_read_temperature_and_humidity_outside(current_measurement);
     sensors_read_daylight(current_measurement);
     sensors_read_uv(current_measurement);
+    sensors_read_battery_status(current_measurement);
     sensors_deinit();
 
     memcpy(&measurements[measurement_count], current_measurement, sizeof(struct sensor_data_t));

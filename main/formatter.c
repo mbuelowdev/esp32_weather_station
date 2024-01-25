@@ -25,17 +25,25 @@ esp_err_t formatter_format_measurements_as_json(char* buffer, size_t buffer_leng
         sprintf(
             &buffer[offset],
             "{"
-            "\"time\":%li,"
-            "\"temp\":%.2f," // 48-58 letters
-            "\"humd\":%.0f,"
-            "\"dayl\":%.0f,"
-            "\"uv\":%d"
+                "\"time\":%li,"
+                "\"temp\":%.2f,"
+                "\"humd\":%.0f,"
+                "\"dayl\":%.0f,"
+                "\"uv\":%d,"
+                "\"batt\":{"
+                    "\"volt\":%.3f,"
+                    "\"chrg\":%.2f,"
+                    "\"chrt\":%.2f"
+                "}"
             "},", // With comma
             measurements[i].timestamp,
             measurements[i].temperature,
             measurements[i].humidity,
             measurements[i].daylight,
-            measurements[i].uv
+            measurements[i].uv,
+            measurements[i].battery_voltage,
+            measurements[i].battery_charge,
+            measurements[i].battery_charge_rate
         );   
     }
 
@@ -44,17 +52,25 @@ esp_err_t formatter_format_measurements_as_json(char* buffer, size_t buffer_leng
     sprintf(
         &buffer[offset],
         "{"
-        "\"time\":%li,"
-        "\"temp\":%.2f," // 47-57 letters
-        "\"humd\":%.0f,"
-        "\"dayl\":%.0f,"
-        "\"uv\":%d"
+            "\"time\":%li,"
+            "\"temp\":%.2f," // 47-57 letters
+            "\"humd\":%.0f,"
+            "\"dayl\":%.0f,"
+            "\"uv\":%d,"
+            "\"batt\":{"
+                "\"volt\":%.3f,"
+                "\"chrg\":%.2f,"
+                "\"chrt\":%.2f"
+            "}"
         "}", // Without comma
         measurements[measurements_length - 1].timestamp,
         measurements[measurements_length - 1].temperature,
         measurements[measurements_length - 1].humidity,
         measurements[measurements_length - 1].daylight,
-        measurements[measurements_length - 1].uv
+        measurements[measurements_length - 1].uv,
+        measurements[measurements_length - 1].battery_voltage,
+        measurements[measurements_length - 1].battery_charge,
+        measurements[measurements_length - 1].battery_charge_rate
     );
 
     // Write the last part of the JSON

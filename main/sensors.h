@@ -42,6 +42,21 @@ struct sensor_data_t {
      * UVA intensity in μW/cm²
     */
     uint16_t uv;
+
+    /**
+     * Battery voltage in V
+    */
+    double battery_voltage;
+
+    /**
+     * Battery charge in %
+    */
+    double battery_charge;
+
+    /**
+     * Battery charge/discharge rate in %/h
+    */
+    double battery_charge_rate;
 };
 
 esp_err_t sensors_init(void);
@@ -49,5 +64,6 @@ esp_err_t sensors_deinit(void);
 esp_err_t sensors_read_temperature_and_humidity_outside(struct sensor_data_t* measurement);
 esp_err_t sensors_read_daylight(struct sensor_data_t * measurement);
 esp_err_t sensors_read_uv(struct sensor_data_t * measurement);
+esp_err_t sensors_read_battery_status(struct sensor_data_t * measurement);
 
 #endif

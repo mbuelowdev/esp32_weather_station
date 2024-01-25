@@ -12,6 +12,7 @@ A **solar, battery-powered, ESP32-DevKitC based, wifi** weather station. Written
 7. Rain (l/mm2)
 8. Wind force
 9. Wind direction
+10. Battery percentage
 
 ### Temperature, Humidity
 
@@ -21,6 +22,8 @@ Temperature and humidity will be measured by an SHT30 ([Product](https://www.ada
 - The sensor supports I2C (addresses: 0x44, 0x45)
 - Has to be mounted under a rain shield and also upside down
 - Has to be protected from direct sunlight
+- Draws 600-1500uA while measuring, 2uA while idle
+- Operates between -40° to +125° Celsius
 
 ### Pressure
 
@@ -29,6 +32,8 @@ Pressure will be measured by an BME280 ([Product](https://www.adafruit.com/produ
 - The sensor resides inside the weather station
 - The sensor supports I2C (addresses: 0x76, 0x77)
 - Needs to be in an area with airflow (Consider mounting it in a sepereate area from main electronics)
+- Draws 4uA while active and <1uA while in sleep mode
+- Operates between -40° to +85° Celsius
 
 ### Daylight
 
@@ -37,6 +42,8 @@ Daylight will be measured by an VEML7700 ([Product](https://www.adafruit.com/pro
 - The sensor resides inside the weather station
 - The sensor supports I2C (addresses: 0x10)
 - Has to be located next to a small window
+- Draws 45uA while active and <1uA while shut down
+- Operates between -25° to +85° Celsius
 
 ### UV
 
@@ -45,6 +52,8 @@ UV will be measured by an VEML6070 ([Product](https://www.adafruit.com/product/2
 - The sensor resides inside the weather station
 - The sensor supports I2C (addresses: 0x70, 0x71, 0x73)
 - Has to be located next to a small window
+- Draws 100-250uA while active and <1uA while shut down
+- Operates between -40° to +85° Celsius
 
 TODO:
 
@@ -62,6 +71,15 @@ TBD
 ### Wind direction
 
 TBD
+
+### Battery percentage
+
+Battery percentage will be measured by an MAX17048 ([Product](https://www.adafruit.com/product/5580)|[Datasheet](https://cdn-learn.adafruit.com/assets/assets/000/114/607/original/MAX17048-MAX17049.pdf)).
+
+- The sensor resides inside the weather station
+- The sensor supports I2C (addresses: 0x36)
+- Draws 23uA while active, 4uA while hibernating
+- Operates between -40° to +85° Celsius
 
 ## Special Use-Cases
 
