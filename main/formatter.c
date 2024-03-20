@@ -28,7 +28,7 @@ esp_err_t formatter_format_measurements_as_json(char* buffer, size_t buffer_leng
                 "\"time\":%li,"
                 "\"temp\":%.2f,"
                 "\"humd\":%.0f,"
-                "\"dayl\":%.0f,"
+                "\"dayl\":%li,"
                 "\"uv\":%d,"
                 "\"batt\":{"
                     "\"volt\":%.3f,"
@@ -55,7 +55,7 @@ esp_err_t formatter_format_measurements_as_json(char* buffer, size_t buffer_leng
             "\"time\":%li,"
             "\"temp\":%.2f," // 47-57 letters
             "\"humd\":%.0f,"
-            "\"dayl\":%.0f,"
+            "\"dayl\":%li,"
             "\"uv\":%d,"
             "\"batt\":{"
                 "\"volt\":%.3f,"

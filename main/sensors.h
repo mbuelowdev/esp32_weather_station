@@ -26,17 +26,27 @@ struct sensor_data_t {
     /**
      * Temperature in celsius
     */
-    double temperature;
+    float temperature;
+
+    /**
+     * Temperature in celsius
+    */
+    float temperature_inside;
 
     /**
      * Relative humidity in %
     */
-    double humidity;
+    float humidity;
+
+    /**
+     * Pressure in 
+    */
+    float pressure;
 
     /**
      * Daylight in Lux
     */
-    double daylight;
+    uint32_t daylight;
 
     /**
      * UVA intensity in μW/cm²
@@ -46,24 +56,28 @@ struct sensor_data_t {
     /**
      * Battery voltage in V
     */
-    double battery_voltage;
+    float battery_voltage;
 
     /**
      * Battery charge in %
     */
-    double battery_charge;
+    float battery_charge;
 
     /**
      * Battery charge/discharge rate in %/h
     */
-    double battery_charge_rate;
+    float battery_charge_rate;
 };
 
 esp_err_t sensors_init(void);
 esp_err_t sensors_deinit(void);
 esp_err_t sensors_read_temperature_and_humidity_outside(struct sensor_data_t* measurement);
-esp_err_t sensors_read_daylight(struct sensor_data_t * measurement);
-esp_err_t sensors_read_uv(struct sensor_data_t * measurement);
+//esp_err_t sensors_read_temperature_and_pressure_inside(struct sensor_data_t* measurement);
+//esp_err_t sensors_read_daylight(struct sensor_data_t * measurement);
+//esp_err_t sensors_read_uv(struct sensor_data_t * measurement);
+esp_err_t sensors_read_daylight_and_uv(struct sensor_data_t * measurement);
 esp_err_t sensors_read_battery_status(struct sensor_data_t * measurement);
+
+void clear_buffers(uint8_t* buffer1, uint8_t* buffer2, size_t buffer1_size, size_t buffer2_size);
 
 #endif

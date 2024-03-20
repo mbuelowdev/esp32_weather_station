@@ -66,7 +66,7 @@ void app_main(void)
     }
 
     // Update the system time once on cold boot
-    if (isColdBoot) {
+    if (isColdBoot && false) {
         ESP_ERROR_CHECK(connect_to_wifi());
         esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
         ESP_ERROR_CHECK(esp_netif_sntp_init(&config));
@@ -113,6 +113,9 @@ bool main_is_configuration_button_pressed(void)
     };
 
     gpio_config(&cfg);
+
+    // TODO sometimes triggers by itself upon cold boot
+    // Should consider a delay
     
     return gpio_get_level(4) == 1;
 }
@@ -138,11 +141,16 @@ void main_normal_mode_loop(void)
     gettimeofday(&tv_now, NULL);
     current_measurement->timestamp = tv_now.tv_sec;
 
+    ESP_LOGI("I2C-LTR390", "Sensors init in 5...");
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+
     sensors_init();
     sensors_read_temperature_and_humidity_outside(current_measurement);
-    sensors_read_daylight(current_measurement);
-    sensors_read_uv(current_measurement);
+    //sensors_read_daylight(current_measurement);
+    //sensors_read_uv(current_measurement);
+    sensors_read_daylight_and_uv(current_measurement);
     sensors_read_battery_status(current_measurement);
+    //sensors_read_temperature_and_pressure_inside(current_measurement);
     sensors_deinit();
 
     memcpy(&measurements[measurement_count], current_measurement, sizeof(struct sensor_data_t));
