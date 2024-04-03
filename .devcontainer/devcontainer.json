@@ -16,5 +16,8 @@
 		"ms-vscode.cmake-tools",
 		"ms-vscode.cpptools"
 	],
+	"mounts": [
+		"type=bind,source=${localEnv:HOME}/.ssh,target=/root/.ssh,readonly",
+	],
 	"userEnvProbe": "loginInteractiveShell"
 }
