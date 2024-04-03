@@ -71,6 +71,7 @@ esp_err_t sensors_read_temperature_and_pressure_inside(struct sensor_data_t* mea
 esp_err_t sensors_read_daylight_and_uv(struct sensor_data_t * measurement);
 esp_err_t sensors_read_battery_status(struct sensor_data_t * measurement);
 
-void clear_buffers(uint8_t* buffer1, uint8_t* buffer2, size_t buffer1_size, size_t buffer2_size);
+void _clear_buffers(uint8_t* buffer1, uint8_t* buffer2, size_t buffer1_size, size_t buffer2_size);
+void _i2c_error_check(uint8_t esp_result_code);
 
 #endif

@@ -37,22 +37,22 @@ Pressure will be measured by an BME280 ([Product](https://www.adafruit.com/produ
 
 ### Daylight
 
-Daylight will be measured by an VEML7700 ([Product](https://www.adafruit.com/product/4162)|[Datasheet](https://www.vishay.com/docs/84286/veml7700.pdf)).
+Daylight will be measured by an LTR390 ([Product](https://www.adafruit.com/product/4831)|[Datasheet](https://optoelectronics.liteon.com/upload/download/DS86-2015-0004/LTR-390UV-01_Final_%20DS_V1.4.PDF)).
 
 - The sensor resides inside the weather station
-- The sensor supports I2C (addresses: 0x10)
+- The sensor supports I2C (addresses: 0x53)
 - Has to be located next to a small window
-- Draws 45uA while active and <1uA while shut down
+- Draws 110uA while active and 1uA while in standby
 - Operates between -25° to +85° Celsius
 
 ### UV
 
-UV will be measured by an VEML6070 ([Product](https://www.adafruit.com/product/2899)|[Datasheet](https://cdn-learn.adafruit.com/assets/assets/000/032/482/original/veml6070.pdf)).
+UV will be measured by an LTR390 ([Product](https://www.adafruit.com/product/4831)|[Datasheet](https://optoelectronics.liteon.com/upload/download/DS86-2015-0004/LTR-390UV-01_Final_%20DS_V1.4.PDF)).
 
 - The sensor resides inside the weather station
-- The sensor supports I2C (addresses: 0x70, 0x71, 0x73)
+- The sensor supports I2C (addresses: 0x53)
 - Has to be located next to a small window
-- Draws 100-250uA while active and <1uA while shut down
+- Draws 110uA while active and 1uA while in standby
 - Operates between -40° to +85° Celsius
 
 TODO:

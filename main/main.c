@@ -141,9 +141,6 @@ void main_normal_mode_loop(void)
     gettimeofday(&tv_now, NULL);
     current_measurement->timestamp = tv_now.tv_sec;
 
-    ESP_LOGI("I2C-LTR390", "Sensors init in 5...");
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
-
     sensors_init();
     sensors_read_temperature_and_humidity_outside(current_measurement);
     sensors_read_daylight_and_uv(current_measurement);
@@ -179,7 +176,8 @@ void main_normal_mode_loop(void)
     disconnect_from_wifi();
     blinker_set_disabled();
 
-    esp_sleep_enable_timer_wakeup(configuration.measurement_rate * 1000 * 1000);
+    //esp_sleep_enable_timer_wakeup(configuration.measurement_rate * 1000 * 1000);
+    esp_sleep_enable_timer_wakeup(10 * 1000 * 1000);
     esp_deep_sleep_start();
 
     // 1. Initialize values in static rtc ram depending on configuration

@@ -1,8 +1,7 @@
 #!/bin/bash
 
-idf.py build
-
-sshpass -p "$1" scp build/bootloader/bootloader.bin build/partition_table/partition-table.bin build/weather_station.bin CMakeLists.txt michael@usbpi.taco.open0x20.de:/builder/
+idf.py build && \
+scp build/bootloader/bootloader.bin build/partition_table/partition-table.bin build/weather_station.bin CMakeLists.txt michael@usbpi.taco.open0x20.de:/builder/
 
 exit 0
 

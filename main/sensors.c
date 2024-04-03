@@ -159,12 +159,12 @@ esp_err_t sensors_read_daylight_and_uv(struct sensor_data_t * measurement)
     uint8_t LTR390_ALS_UVS_GAIN = 0x05;
     uint8_t LTR390_PART_ID = 0x06;
     uint8_t LTR390_MAIN_STATUS = 0x07;
-    /*uint8_t LTR390_ALS_DATA_0 = 0x0D;
+    uint8_t LTR390_ALS_DATA_0 = 0x0D;
     uint8_t LTR390_ALS_DATA_1 = 0x0E;
     uint8_t LTR390_ALS_DATA_2 = 0x0F;
     uint8_t LTR390_UVS_DATA_0 = 0x10;
     uint8_t LTR390_UVS_DATA_1 = 0x11;
-    uint8_t LTR390_UVS_DATA_2 = 0x12; */
+    uint8_t LTR390_UVS_DATA_2 = 0x12;
 
     // Check if the sensor is on the bus.
     // If not: use dummy values and log as error
@@ -179,114 +179,132 @@ esp_err_t sensors_read_daylight_and_uv(struct sensor_data_t * measurement)
 
 
     
-    uint8_t test_bufferA[1] = {LTR390_PART_ID};
-    uint8_t test_bufferB[1] = {0};
-    ESP_LOG_BUFFER_HEX(LOGTAG, test_bufferA, sizeof(test_bufferA));
-    ESP_ERROR_CHECK(i2c_master_transmit_receive(ltr390_dev_handle, test_bufferA, sizeof(test_bufferA), test_bufferB, sizeof(test_bufferB), 50000 / portTICK_PERIOD_MS));
-    ESP_LOG_BUFFER_HEX(LOGTAG, test_bufferB, sizeof(test_bufferB));
-
-
-
-
-
-
-    return ESP_OK;
-    
-    // sensor requires 5ms after powerup to boot into idle mode
-
-
-/*
-    ESP_LOGE("I2C-LTR390", "CLEAR BUFFERS 1");
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
-    ESP_LOGE("I2C-LTR390", "CLEAR BUFFERS 2");
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
     wbuffer[0] = LTR390_PART_ID;
-    err = i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "errorA: %i", err);
-    ESP_LOG_BUFFER_HEX("I2C-LTR390", rbuffer, sizeof(rbuffer));
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, 50000 / portTICK_PERIOD_MS));
 
 
 
 
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+
+
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
     wbuffer[0] = LTR390_MAIN_STATUS;
-    err = i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "error0: %i", err);
-    ESP_LOG_BUFFER_HEX("I2C-LTR390", rbuffer, sizeof(rbuffer));
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
 
 
 
     // Put the sensor into enabled ALS mode
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
     wbuffer[0] = LTR390_MAIN_CTRL;
     wbuffer[1] = 0b00000010;
-    err = i2c_master_transmit(ltr390_dev_handle, wbuffer, 2, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "error1: %i", err);
+    _i2c_error_check(i2c_master_transmit(ltr390_dev_handle, wbuffer, 2, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
 
     // Set the measurement resolution and rate
     // resolution: 18 bits
     // rate: every 100ms
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
     wbuffer[0] = LTR390_ALS_UVS_MEAS_RATE;
     wbuffer[1] = 0b00100010;
-    err = i2c_master_transmit(ltr390_dev_handle, wbuffer, 2, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "error2: %i", err);
+    _i2c_error_check(i2c_master_transmit(ltr390_dev_handle, wbuffer, 2, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
 
     // Set the gain to 3
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
     wbuffer[0] = LTR390_ALS_UVS_GAIN;
     wbuffer[1] = 0b00000001;
-    err = i2c_master_transmit(ltr390_dev_handle, wbuffer, 2, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "error3: %i", err);
+    _i2c_error_check(i2c_master_transmit(ltr390_dev_handle, wbuffer, 2, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
 
     // Wait 100ms for the first measurement and then continiously ask if the data is ready
     // with a delay of 10ms in between
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    int timeout = 10;
-    while (timeout > 0) {
-        clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+    int timeout_als = 10;
+    while (timeout_als > 0) {
+        _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
         wbuffer[0] = LTR390_MAIN_STATUS;
-        err = i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-        ESP_LOGE("I2C-LTR390", "error4: %i", err);
-        ESP_LOG_BUFFER_HEX("I2C-LTR390", rbuffer, sizeof(rbuffer));
+        _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
 
         if (rbuffer[0] & 0b1000) {
             break;
         }
 
-        timeout -= 1;
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        timeout_als -= 1;
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 
     // Read the ALS
     uint32_t als_measurement = 0;
 
     // Read the lower 8 bits
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
     wbuffer[0] = LTR390_ALS_DATA_0;
-    err = i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "error5: %i", err);
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
     als_measurement = als_measurement + (rbuffer[0]);
 
     // Read the middle 8 bits
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
-    wbuffer[0] = LTR390_ALS_DATA_0;
-    err = i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "error6: %i", err);
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    wbuffer[0] = LTR390_ALS_DATA_1;
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
     als_measurement = als_measurement + (rbuffer[0] << 8);
 
     // Read the upper 4 bits
-    clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
-    wbuffer[0] = LTR390_ALS_DATA_0;
-    err = i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-    ESP_LOGE("I2C-LTR390", "error7: %i", err);
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    wbuffer[0] = LTR390_ALS_DATA_2;
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
     als_measurement = als_measurement + (rbuffer[0] << 12);
 
-    ESP_LOGI("I2C-LTR390", "als_measurement: %li", als_measurement);
+    float lux = (0.6f * als_measurement) / (3 * 1);
+    ESP_LOGI("I2C-LTR390", "lux: %.2f", lux);
+    measurement->daylight = lux;
 
-    measurement->daylight = 0;
-    measurement->uv = 0;
+    // Put the sensor into enabled UVS mode
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    wbuffer[0] = LTR390_MAIN_CTRL;
+    wbuffer[1] = 0b00000000;
+    _i2c_error_check(i2c_master_transmit(ltr390_dev_handle, wbuffer, 2, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
 
-    return ESP_OK;*/
+    // Wait 100ms for the first measurement and then continiously ask if the data is ready
+    // with a delay of 10ms in between
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+    int timeout_uvs = 10;
+    while (timeout_uvs > 0) {
+        _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+        wbuffer[0] = LTR390_MAIN_STATUS;
+        _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
+
+        if (rbuffer[0] & 0b1000) {
+            break;
+        }
+
+        timeout_uvs -= 1;
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+
+    // Read the UVS
+    uint32_t uvs_measurement = 0;
+
+    // Read the lower 8 bits
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    wbuffer[0] = LTR390_UVS_DATA_0;
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
+    uvs_measurement = uvs_measurement + (rbuffer[0]);
+
+    // Read the middle 8 bits
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    wbuffer[0] = LTR390_UVS_DATA_1;
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
+    uvs_measurement = uvs_measurement + (rbuffer[0] << 8);
+
+    // Read the upper 4 bits
+    _clear_buffers(rbuffer, wbuffer, sizeof(rbuffer), sizeof(wbuffer));
+    wbuffer[0] = LTR390_UVS_DATA_2;
+    _i2c_error_check(i2c_master_transmit_receive(ltr390_dev_handle, wbuffer, 1, rbuffer, 1, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS));
+    uvs_measurement = uvs_measurement + (rbuffer[0] << 12);
+
+    double uvi = uvs_measurement / ((double) ((3.0f/18.0f) * (1.0f/4.0f) * 2300.0f));
+    ESP_LOGI("I2C-LTR390", "uvi: %.2f", uvi);
+    measurement->uv = (float) uvi;
+
+    return ESP_OK;
 }
 
 // TODO error handling
@@ -348,7 +366,16 @@ esp_err_t sensors_read_battery_status(struct sensor_data_t * measurement)
     return ESP_OK;
 }
 
-void clear_buffers(uint8_t* buffer1, uint8_t* buffer2, size_t buffer1_size, size_t buffer2_size) {
+void _clear_buffers(uint8_t* buffer1, uint8_t* buffer2, size_t buffer1_size, size_t buffer2_size) {
     memset(&buffer1, 0, buffer1_size);
     memset(&buffer2, 0, buffer2_size);
+}
+
+void _i2c_error_check(uint8_t esp_result_code) {
+
+    if (esp_result_code != ESP_OK) {
+        ESP_LOGE("I2C", "Error: %i", esp_result_code);
+        sensors_deinit();
+        ESP_ERROR_CHECK(esp_result_code);
+    }
 }
