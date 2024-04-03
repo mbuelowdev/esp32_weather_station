@@ -26,7 +26,8 @@
         "esp_netif_sntp.h": "c",
         "configuration.h": "c",
         "i2c_master.h": "c",
-        "esp_attr.h": "c"
+        "esp_attr.h": "c",
+        "i2c_types.h": "c"
     },
     "idf.adapterTargetName": "esp32",
     "C_Cpp.intelliSenseEngine": "Tag Parser",
